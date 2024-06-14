@@ -1,0 +1,79 @@
+﻿@page "/table/{entitiesName}"
+@inject NavigationManager _navigationManager
+@inject ReviewerApiService _reviewerApiService
+
+<PageTitle>@entitiesName</PageTitle>
+
+
+
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a class="btn btn-sm btn-outline-secondary" href="/edit/@entitiesName">Create</a>
+        </div>
+    </div>
+
+    <h2>@entitiesName</h2>
+    <div class="table-responsive small">
+        <table class="table table-striped table-sm">
+            <thead>
+                <tr>
+                    @{
+                        if (_propertyNames != null)
+                        {
+                            foreach (var prop in _propertyNames)
+                            {
+                                <th scope="col">@prop</th>
+                            }
+                        }
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    if (_entities != null)
+                    {
+                        foreach (var country in _entities)
+                        {
+                            <tr>
+                                @{
+                                    foreach (var prop in _propertyNames)
+                                    {
+                                        <td>@_entityTypesService.GetEntityObjectPropertyValue(country, prop)</td>
+                                    }
+                                }
+                            </tr>
+                        }
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+@code
+{
+    [Parameter]
+    public string entitiesName { get; set; }
+
+    private List<string> _propertyNames;
+    private IEnumerable<object> _entities;
+    private EntityTypesService _entityTypesService;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _entityTypesService = new EntityTypesService();
+
+        var entityResponseType = _entityTypesService.GetResponseEntityType(entitiesName);
+
+        if (entityResponseType == null)
+        {
+            //_navigationManager.NavigateTo("Error");
+        }
+
+        var entitiesListType = _entityTypesService.GetEnumerableResponseEntityType(entitiesName);
+
+        _propertyNames = _entityTypesService.GetEntityTypePropertyNames(entityResponseType);
+        _entities = (IEnumerable<object>)await _reviewerApiService.GetAsync($"admin/{entitiesName}?page=0&count=5", entitiesListType);
+
+        StateHasChanged();
+    }
+}
