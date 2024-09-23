@@ -13,9 +13,9 @@ namespace Reviewer.Services.Implemintations.Admin
         {
         }
 
-        public Task<List<CountryResponse>> GetList(RequestFilters filters)
+        public Task<ListData<CountryResponse>> GetList(RequestFilters filters)
         {
-            return base.GetList(filters, c => filters.Search == null || c.Name.ToLower().Contains(filters.Search.ToLower()));
+            return base.GetList(filters, c => string.IsNullOrEmpty(filters.Search) || c.Name.ToLower().Contains(filters.Search.ToLower()));
         }
     }
 }

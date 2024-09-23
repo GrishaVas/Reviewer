@@ -12,7 +12,7 @@ namespace Reviewer.Services.Abstractions.Admin
         Task<TResponse> Create(TCreate create);
         Task<TResponse> Update(TUpdate update);
         Task<TResponse> Get(Guid id);
-        Task<List<TResponse>> GetList(RequestFilters filters);
+        Task<ListData<TResponse>> GetList(RequestFilters filters);
         Task Delete(Guid id);
     }
 }

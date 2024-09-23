@@ -1,4 +1,6 @@
 ﻿@page "/table/{entitiesName}"
+@using Reviewer.Services.Models
+@using Reviewer.Services.Models.Admin.Attributes
 @inject NavigationManager _navigationManager
 @inject ReviewerApiService _reviewerApiService
 
@@ -8,7 +10,7 @@
 
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <div class="btn-toolbar mb-2 mb-md-0">
-            <a class="btn btn-sm btn-outline-secondary" href="/edit/@entitiesName">Create</a>
+            <a class="btn btn-sm btn-outline-secondary" href="/create/@entitiesName">Create</a>
         </div>
     </div>
 
@@ -62,17 +64,23 @@
     {
         _entityTypesService = new EntityTypesService();
 
-        var entityResponseType = _entityTypesService.GetResponseEntityType(entitiesName);
+        var entityResponseType = _entityTypesService.GetEntityType<AdminResponseTypeApiNameAttribute>(entitiesName);
 
         if (entityResponseType == null)
         {
             //_navigationManager.NavigateTo("Error");
         }
 
-        var entitiesListType = _entityTypesService.GetEnumerableResponseEntityType(entitiesName);
+        _propertyNames = entityResponseType.GetProperties().Select(p => p.Name).ToList();
 
-        _propertyNames = _entityTypesService.GetEntityTypePropertyNames(entityResponseType);
-        _entities = (IEnumerable<object>)await _reviewerApiService.GetAsync($"admin/{entitiesName}?page=0&count=5", entitiesListType);
+        var filters = new RequestFilters
+            {
+                Count = 5,
+                Page = 0
+            };
+        var response = await _reviewerApiService.GetList(filters, entityResponseType);
+
+        _entities = response.Data;
 
         StateHasChanged();
     }

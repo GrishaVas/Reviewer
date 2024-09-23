@@ -2,7 +2,7 @@
 
 namespace Reviewer.Services.Models.Admin
 {
-    [AdminResponseTypeAddName("Languages")]
+    [AdminResponseTypeApiName("Languages")]
     public class LanguageResponse
     {
         public Guid Id { get; set; }

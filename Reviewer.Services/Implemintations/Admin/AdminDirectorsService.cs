@@ -13,7 +13,7 @@ namespace Reviewer.Services.Implemintations.Admin
         {
         }
 
-        public Task<List<DirectorResponse>> GetList(RequestFilters filters)
+        public Task<ListData<DirectorResponse>> GetList(RequestFilters filters)
         {
             return base.GetList(filters, d => filters.Search == null || d.Name.ToLower().Contains(filters.Search.ToLower()));
         }

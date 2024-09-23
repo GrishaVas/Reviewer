@@ -6,7 +6,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddScoped<EntityTypesService>();
-builder.Services.AddScoped<FormGenerationService>();
 builder.Services.AddHttpClient<ReviewerApiService>();
 
 

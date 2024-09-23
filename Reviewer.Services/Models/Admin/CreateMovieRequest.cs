@@ -2,7 +2,7 @@
 
 namespace Reviewer.Services.Models.Admin
 {
-    [AdminCreateTypeAddName("Movies")]
+    [AdminCreateTypeApiName("Movies")]
     public class CreateMovieRequest
     {
         public string Name { get; set; }

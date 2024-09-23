@@ -2,6 +2,6 @@
 {
     public class CollectionRefProp : BaseRefProp
     {
-        public List<string> ValuesToAdd { get; set; }
+        public List<Guid> ValuesToAdd { get; set; }
     }
 }

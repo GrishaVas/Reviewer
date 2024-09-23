@@ -2,7 +2,7 @@
 
 namespace Reviewer.Services.Models.Admin
 {
-    [AdminResponseTypeAddName("Countries")]
+    [AdminResponseTypeApiName("Countries")]
     public class CountryResponse
     {
         public Guid Id { get; set; }

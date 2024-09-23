@@ -2,7 +2,7 @@
 
 namespace Reviewer.Services.Models.Admin
 {
-    [AdminCreateTypeAddName("Countries")]
+    [AdminCreateTypeApiName("Countries")]
     public class CreateCountryRequest
     {
         public string Name { get; set; }

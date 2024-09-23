@@ -32,7 +32,7 @@ namespace Reviewer.Api.Controllers.Admin
             return Ok(Guid.Empty);
         }
 
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<CountryResponse>))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ListData<CountryResponse>))]
         public override Task<IActionResult> GetList([FromQuery] RequestFilters filters)
         {
             return base.GetList(filters);

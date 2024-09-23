@@ -49,7 +49,7 @@ namespace Reviewer.Services.Abstractions.Admin
 
             return _mapper.Map<TResponse>(entity);
         }
-        public virtual async Task<List<TResponse>> GetList(RequestFilters filters, Expression<Func<T, bool>> predicate = null)
+        public virtual async Task<ListData<TResponse>> GetList(RequestFilters filters, Expression<Func<T, bool>> predicate = null)
         {
             if (filters == null)
             {
@@ -60,7 +60,14 @@ namespace Reviewer.Services.Abstractions.Admin
                 };
             }
 
-            var entities = await (predicate != null ?
+            var result = new ListData<TResponse>
+            {
+                Count = filters.Count,
+                Page = filters.Page
+            };
+
+            result.DataMaxCount = _repository.GetQuery().Count();
+            result.Data = await (predicate != null ?
                     _repository.GetQuery()
                     .Where(predicate) :
                     _repository.GetQuery()
@@ -70,7 +77,7 @@ namespace Reviewer.Services.Abstractions.Admin
                 .Take(filters.Count)
                 .ToListAsync();
 
-            return entities;
+            return result;
         }
         public virtual async Task Delete(Guid id)
         {

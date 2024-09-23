@@ -2,7 +2,7 @@
 
 namespace Reviewer.Services.Models.Admin
 {
-    [AdminCreateTypeAddName("Languages")]
+    [AdminCreateTypeApiName("Languages")]
     public class CreateLanguageRequest
     {
         public string Name { get; set; }

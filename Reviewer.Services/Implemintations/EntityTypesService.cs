@@ -12,29 +12,52 @@ namespace Reviewer.Services.Implemintations
         {
             _assembly = typeof(AdminApiPathAttribute).Assembly;
         }
-        public Type GetEnumerableResponseEntityType(string entityName)
+        public Type GetEnumerableEntityType<TAttr>(string entityName) where
+            TAttr : BaseAdminTypeApiNameAttribute
         {
-            var type = getType<AdminResponseTypeAddNameAttribute>(entityName);
+            var type = getType<TAttr>(entityName);
 
             return typeof(IEnumerable<>).MakeGenericType(type);
         }
-        public Type GetResponseEntityType(string entityName)
+        public Type GetEnumerableEntityType<TAttr>(Type entityType) where
+            TAttr : BaseAdminTypeApiNameAttribute
         {
-            var type = getType<AdminResponseTypeAddNameAttribute>(entityName);
+            return typeof(IEnumerable<>).MakeGenericType(entityType);
+        }
+
+        public Type GetEntityType<TAttr>(string entityName) where
+            TAttr : BaseAdminTypeApiNameAttribute
+        {
+            var type = getType<TAttr>(entityName);
 
             return type;
         }
 
-        public Type GetCreateEntityType(string entityName)
+        public IEnumerable<PropertyInfo> GetSimpleProps(Type entityType)
         {
-            var type = getType<AdminCreateTypeAddNameAttribute>(entityName);
-
-            return type;
+            return entityType.GetProperties().Where(p => p.PropertyType.IsPrimitive ||
+                p.PropertyType == typeof(string) ||
+                p.PropertyType == typeof(TimeOnly) ||
+                p.PropertyType == typeof(DateOnly) ||
+                p.PropertyType == typeof(DateTime));
         }
 
-        public List<string> GetEntityTypePropertyNames(Type type)
+        public IEnumerable<string> GetCollectionReferenceProps(Type entityType)
         {
-            return type.GetProperties().Select(p => p.Name).ToList();
+            var props = entityType.GetProperties().Where(p => p.PropertyType.IsGenericType ?
+                p.PropertyType.GetGenericTypeDefinition() == typeof(ICollection<>) :
+                false).Select(p => p.Name);
+
+            return props;
+        }
+
+        public IEnumerable<string> GetReferenceProps(Type entityType)
+        {
+            var props = entityType.GetProperties()
+                .Where(p => p.PropertyType == typeof(Guid) && p.Name != "Id")
+                .Select(p => p.Name);
+
+            return props;
         }
 
         public string GetEntityObjectPropertyValue(object entity, string propertyName)
@@ -48,9 +71,9 @@ namespace Reviewer.Services.Implemintations
         }
 
         private Type getType<TModelTypeAttr>(string modelName) where
-            TModelTypeAttr : BaseAdminTypeAddNameAttribute
+            TModelTypeAttr : BaseAdminTypeApiNameAttribute
         {
-            var type = _assembly.GetTypes().FirstOrDefault(t => t.GetCustomAttribute<TModelTypeAttr>()?.Names.Contains(modelName) == true);
+            var type = _assembly.GetTypes().FirstOrDefault(t => t.GetCustomAttribute<TModelTypeAttr>()?.Name == modelName);
 
             if (type == null)
             {

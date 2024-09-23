@@ -2,7 +2,7 @@
 
 namespace Reviewer.Services.Models.Admin
 {
-    [AdminCreateTypeAddName("Directors")]
+    [AdminCreateTypeApiName("Directors")]
     public class CreateDirectorRequest
     {
         public string FirstName { get; set; }

@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using Reviewer.Services.Models
 @rendermode RenderMode.InteractiveServer
 @inject ReviewerApiService _reviewerApiService;
 
@@ -246,7 +247,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        movies = await _reviewerApiService.GetAsync<List<MovieDetails>>($"api/movies?page=0&count=5&order.orderby=Name");
+        var response = await _reviewerApiService.GetAsync<ListData<MovieDetails>> ($"api/movies?page=0&count=5&order.orderby=Name");
+        
+        movies = response.Data.ToList();
+
 
         StateHasChanged();
     }

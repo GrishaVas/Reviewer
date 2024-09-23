@@ -2,6 +2,6 @@
 {
     public class RefProp : BaseRefProp
     {
-        public string ValueToAdd { get; set; }
+        public Guid ValueToAdd { get; set; }
     }
 }

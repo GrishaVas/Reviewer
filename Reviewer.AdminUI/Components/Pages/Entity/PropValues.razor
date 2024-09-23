@@ -1,0 +1,155 @@
+﻿@using Reviewer.Services.Models
+@using Reviewer.Services.Models.Admin.Attributes
+@inject EntityTypesService _entityTypesService
+@inject ReviewerApiService _reviewerApiService
+
+@{
+    if (PropertyType == 0)
+    {
+        <label for=@PropertyName class="form-label">@PropertyName</label>
+        <select class="form-select" id=@PropertyName required="" name=@PropertyName>
+            @{
+                if (_propValues != null)
+                {
+                    foreach (var val in _propValues)
+                    {
+                        var name = _entityTypesService.GetEntityObjectPropertyValue(val, "Name");
+                        var id = _entityTypesService.GetEntityObjectPropertyValue(val, "Id");
+
+                        <option @onclick="(e) => {OnAddPropValue.InvokeAsync(new Guid(id));}">@name</option>
+                    }
+                }
+            }
+        </select>
+        <div class="invalid-feedback">
+            Please select a valid country.
+        </div>
+    }
+    else
+    {
+        <div class="col-md-5">
+            <div class="dropdown-menu d-block position-static pt-0 mx-0 rounded-3 overflow-hidden w-280px" data-bs-theme="light">
+                <div class="p-2 mb-2 bg-body-tertiary border-bottom">
+                    <input type="search" class="form-control" name=@PropertyName autocomplete="false" placeholder=@PropertyName
+                           @oninput="async (e)=> await searchCollectionRefInputValue(PropertyName, e.Value.ToString())">
+                </div>
+                <ul class="list-unstyled mb-0 overflow-auto" style="max-height:200px" @ref="scrollContainer" @onscroll="onScroll">
+                    @{
+                        if (_propValues != null)
+                        {
+                            foreach (var obj in _propValues)
+                            {
+                                var val = _entityTypesService.GetEntityObjectPropertyValue(obj, "Name");
+                                var id = _entityTypesService.GetEntityObjectPropertyValue(obj, "Id");
+
+                                <li>
+                                    <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2"
+                                            @onclick="async (e)=>{addCollectionRefValue(new Guid(id)); await OnAddPropValue.InvokeAsync(_propValuesToAdd);}">
+                                        <span class="d-inline-block bg-success rounded-circle p-1"></span>
+                                        @val
+                                    </button>
+                                </li>
+                            }
+                        }
+                    }
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <ul class="list-group mb-3">
+                @{
+                    if (_propValuesToAdd != null)
+                    {
+                        foreach (var val in _propValuesToAdd)
+                        {
+                            <li class="list-group-item d-flex justify-content-between lh-sm">
+                                <h6 class="my-0">@val</h6>
+                            </li>
+                        }
+                    }
+                }
+            </ul>
+        </div>
+    }
+    <script>
+        function isScrollAtBottom(container) {
+            return container.scrollHeight - container.scrollTop === container.clientHeight;
+        }
+    </script>
+}
+@code {
+    [Parameter]
+    public string PropertyName { get; set; }
+    [Parameter]
+    public int PropertyType { get; set; }
+    [Parameter]
+    public string PropertyApiPath { get; set; }
+    [Parameter]
+    public EventCallback OnAddPropValue { get; set; }
+
+    private List<object> _propValues;
+    private List<Guid> _propValuesToAdd = new List<Guid>();
+    private int _value;
+    private int _page = 0;
+    private int _count = 6;
+    private ElementReference scrollContainer;
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var responseEntityType = _entityTypesService.GetEntityType<AdminResponseTypeApiNameAttribute>(PropertyName);
+        var filters = new RequestFilters
+            {
+                Count = _count,
+                Page = _page
+            };
+        var response = await _reviewerApiService.GetList(filters, responseEntityType);
+
+        _propValues = response.Data.ToList();
+
+        StateHasChanged();
+    }
+
+    private async Task searchCollectionRefInputValue(string name, string search)
+    {
+        var responseEntityType = _entityTypesService.GetEntityType<AdminResponseTypeApiNameAttribute>(PropertyName);
+        var filters = new RequestFilters
+            {
+                Count = 5,
+                Page = 0,
+                Search = search
+            };
+        var response = await _reviewerApiService.GetList(filters, responseEntityType);
+
+        _propValues = response.Data.ToList();
+    }
+
+    private void addCollectionRefValue(Guid value)
+    {
+        if (!_propValuesToAdd.Contains(value))
+        {
+            _propValuesToAdd.Add(value);
+        }
+    }
+
+    private async Task onScroll(EventArgs e)
+    {
+        var isAtBottom = await JSRuntime.InvokeAsync<bool>("isScrollAtBottom", scrollContainer);
+
+        if (isAtBottom)
+        {
+            _page++;
+
+            var responseEntityType = _entityTypesService.GetEntityType<AdminResponseTypeApiNameAttribute>(PropertyName);
+            var filters = new RequestFilters
+                {
+                    Count = _count,
+                    Page = _page
+                };
+            var response = await _reviewerApiService.GetList(filters, responseEntityType);
+
+            _propValues.AddRange(response.Data);
+        }
+    }
+}

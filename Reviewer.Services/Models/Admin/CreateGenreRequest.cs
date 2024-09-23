@@ -2,7 +2,7 @@
 
 namespace Reviewer.Services.Models.Admin
 {
-    [AdminCreateTypeAddName("Genres")]
+    [AdminCreateTypeApiName("Genres")]
     public class CreateGenreRequest
     {
         public string Name { get; set; }

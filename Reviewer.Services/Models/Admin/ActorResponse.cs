@@ -2,7 +2,7 @@
 
 namespace Reviewer.Services.Models.Admin
 {
-    [AdminResponseTypeAddName("Actors", "Actor")]
+    [AdminResponseTypeApiName("Actors")]
     public class ActorResponse
     {
         public Guid Id { get; set; }

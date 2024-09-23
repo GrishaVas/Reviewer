@@ -1,0 +1,190 @@
+﻿@page "/edit/{entitiesName}/{entityId:guid}"
+@page "/create/{entitiesName}"
+@rendermode RenderMode.InteractiveServer
+@inject EntityTypesService _entityTypesService
+@inject ReviewerApiService _reviewerApiService
+@inject IConfiguration _conf;
+
+@using System.Reflection
+@using System.ComponentModel
+@using Reviewer.Services.Models
+@using Reviewer.Services.Models.Admin.Attributes
+
+
+    <h4 class="mb-3">@entitiesName</h4>
+    <div class="row g-3">
+        @{
+            var half = (int)Math.Round(_simpleProps.Count() / 2d, MidpointRounding.AwayFromZero);
+            var Cols = new List<IEnumerable<PropertyInfo>>()
+            {
+                _simpleProps.Take(half),
+                _simpleProps.Skip(half)
+            };
+
+            foreach (var props in Cols)
+            {
+                <div class="col-sm-6">
+                    @{
+                        foreach (var prop in props)
+                        {
+                            <label for=@prop.Name class="form-label">@prop.Name</label>
+
+                            if (prop.PropertyType == typeof(TimeOnly))
+                            {
+                                <input type="time" class="form-control" name=@prop.Name @onchange="(e) => setPropertyValue(e, prop.Name)">
+                            }else
+                            if (prop.PropertyType == typeof(DateOnly))
+                            {
+                                <input type="date" class="form-control" name=@prop.Name @onchange="(e) => setPropertyValue(e, prop.Name)">
+                            }else
+                            if (prop.PropertyType == typeof(DateTime))
+                            {
+                                <input type="datetime-local" class="form-control" name=@prop.Name @onchange="(e) => setPropertyValue(e, prop.Name)">
+                            }
+                            else
+                            {
+                                <input type="text" class="form-control" placeholder=@prop.Name @onchange="(e) => setPropertyValue(e, prop.Name)" required="" name=@prop.Name>
+                            }
+
+                            <div class="invalid-feedback">
+                                Valid @prop.Name is required.
+                            </div>
+                        }
+                    }
+                </div>
+            }
+        }
+        </div>
+        @{
+
+            if (_collectionRefProps != null)
+            {
+                <div class="row m-2">
+                    @{
+                        foreach (var prop in _collectionRefProps)
+                        {
+                            <PropValues PropertyType="1"
+                                PropertyName="@prop.Name" 
+                                PropertyApiPath="@_entityTypesService.GetPropertyPath(_entityType, prop.Name)" 
+                                OnAddPropValue="(obj)=>{prop.ValuesToAdd = (List<Guid>)obj;}"
+                                />
+                        }
+                     }
+                </div>
+            }
+
+            if (_refProps != null)
+            {
+                <div class="row">
+                    <div class="col-md-4">
+                        @{
+                            foreach (var prop in _refProps)
+                            {
+                                <PropValues PropertyType="0"
+                                    PropertyName="@prop.Name"
+                                    PropertyApiPath="@_entityTypesService.GetPropertyPath(_entityType, prop.Name)"
+                                    OnAddPropValue="(obj)=>{prop.ValueToAdd = (Guid)obj;}"
+                                    />
+                            }
+                        }
+                    </div>
+                </div>
+            } 
+        }
+
+    <hr class="my-4">
+
+    <button type="button" class="w-100 btn btn-primary btn-lg" @onclick="async (e) => await sendRequestToCreateEntity()">Create</button>
+
+@code{
+    [Parameter]
+    public string entitiesName { get; set; }
+    [Parameter]
+    public Guid? entityId { get; set; }
+
+    private object _createEntity;
+    private Type _entityType;
+    private IEnumerable<PropertyInfo> _simpleProps;
+    private List<RefProp> _refProps;
+    private List<CollectionRefProp> _collectionRefProps;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _entityType = _entityTypesService.GetEntityType<AdminCreateTypeApiNameAttribute>(entitiesName);
+
+        _createEntity = _entityType.GetConstructor([]).Invoke(null);
+
+        _simpleProps = _entityTypesService.GetSimpleProps(_entityType);
+        _collectionRefProps = (await Task.WhenAll(_entityTypesService.GetCollectionReferenceProps(_entityType).Select(async x => new CollectionRefProp
+            {
+                Name = x
+            }))).ToList();
+
+        _refProps = (await Task.WhenAll(_entityTypesService.GetReferenceProps(_entityType).Select(async x => new RefProp
+            {
+                Name = x
+            }))).ToList();
+
+        StateHasChanged();
+    }
+
+    private async Task sendRequestToCreateEntity()
+    {
+        foreach (var collectionProp in _collectionRefProps)
+        {
+            var prop = _entityType.GetProperty(collectionProp.Name);
+
+            if (prop != null && prop.PropertyType.IsGenericType ?
+                    prop.PropertyType.GetGenericTypeDefinition() == typeof(ICollection<>) :
+                    false
+                )
+            {
+                prop.SetValue(_createEntity, collectionProp.ValuesToAdd);
+            }
+        }
+
+        foreach (var refProp in _refProps)
+        {
+            var prop = _entityType.GetProperty(refProp.Name);
+
+            if (prop != null)
+            {
+                prop.SetValue(_createEntity, refProp.ValueToAdd);
+            }
+        }
+
+        var responseEntityType = _entityTypesService.GetEntityType<AdminResponseTypeApiNameAttribute>(entitiesName);
+        
+        var obj = await _reviewerApiService.Create(_createEntity, responseEntityType);
+    }
+
+    private void setPropertyValue(ChangeEventArgs e, string propName)
+    {
+        var prop = _entityType.GetProperty(propName);
+
+        if (prop != null)
+        {
+            var converter = TypeDescriptor.GetConverter(prop.PropertyType);
+            var value = converter.ConvertFrom(e.Value);
+
+            if (value != null)
+            {
+                prop.SetValue(_createEntity, value);
+            }
+        }
+    }   
+
+    private async Task<IEnumerable<object>> getPropertyValues(string refPropName)
+    {
+        var responseEntityType = _entityTypesService.GetEntityType<AdminResponseTypeApiNameAttribute>(refPropName);
+        var filters = new RequestFilters
+        {
+            Count = 5,
+            Page = 0
+        };
+        var response = await _reviewerApiService.GetList(filters, responseEntityType);
+
+        return response.Data;
+    }
+}
+
